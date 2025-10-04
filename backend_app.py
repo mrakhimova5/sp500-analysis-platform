@@ -275,13 +275,22 @@ def create_growth_chart(df, company_name, start_year, end_year):
 
 @app.route('/')
 def index():
-    """API root endpoint"""
+    """Serve the frontend HTML"""
+    return send_file('frontend.html')
+
+
+@app.route('/api')
+def api_info():
+    """API information endpoint"""
     return jsonify({
         'message': 'S&P 500 10-K Analysis API',
         'version': '1.0',
         'endpoints': {
+            '/': 'GET - Frontend interface',
+            '/api': 'GET - API information',
             '/analyze': 'POST - Analyze 10-K documents',
-            '/health': 'GET - Health check'
+            '/health': 'GET - Health check',
+            '/download/<company_name>': 'GET - Download analysis results'
         }
     })
 
