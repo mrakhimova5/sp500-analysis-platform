@@ -21,12 +21,8 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Frontend loaded. Using backend at: ' + API_URL);
-        });
-    </script>
-</body>
-</html>       border-radius: 20px;
+            background: white;
+            border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
@@ -649,9 +645,8 @@
             }
         });
 
-        // Initialize with one category
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('Frontend loaded. Backend should be running on http://localhost:5000');
+            console.log('Frontend loaded. Using backend at: ' + API_URL);
         });
     </script>
 </body>
