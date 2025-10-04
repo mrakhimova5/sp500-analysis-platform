@@ -49,25 +49,33 @@ normalized_df = df.div(df.sum(axis=0), axis=1)
 
 ---
 
-### 3. **Normalized Growth Heatmap** (`normalized_heatmap.png`)
-**Purpose**: Show growth relative to baseline year (2020 = 100)
+### 3. **Relative Importance Heatmap** (`normalized_heatmap.png`)
+**Purpose**: Show which category-year combinations represent the most mentions overall
 
 **Calculation**:
 ```python
-normalized_df = df.div(df[base_year], axis=0) * 100
+total_all = df.values.sum()  # Sum of ALL mentions across ALL categories and years
+normalized_df = (df / total_all) * 100
 ```
 
 **Logic**:
-- For each category (row), divide all year values by the base year value
-- Multiply by 100 to create index
-- Example: If AI mentions were 50 in 2020, 75 in 2021:
-  - 2020: 50/50 * 100 = 100 (baseline)
-  - 2021: 75/50 * 100 = 150 (50% growth)
+- Calculate total mentions across entire dataset (all categories, all years)
+- For each cell: `(category_year_count / grand_total) * 100`
+- Example: If total across all = 1000 mentions
+  - AI 2020 = 50 mentions → 50/1000 = 5.0%
+  - AI 2024 = 100 mentions → 100/1000 = 10.0%
+  - Cloud 2020 = 30 mentions → 30/1000 = 3.0%
 
 **Verification**: ✅ **CORRECT**
-- Base year column always shows 100 for all categories
-- Shows growth trajectory vs starting point
-- Answers: "How much has AI grown since 2020?"
+- All cells sum to 100% (entire dataset)
+- Shows absolute importance in context of everything
+- Darkest cells = most significant category-year combinations
+- Answers: "Which category-year had the most impact overall?"
+
+**Key Difference from Heatmap #2**:
+- Heatmap #2 (Within-Year): Each COLUMN sums to 100%
+- Heatmap #3 (Relative Importance): ALL CELLS sum to 100%
+- This shows cross-time importance, not just within-year distribution
 
 ---
 

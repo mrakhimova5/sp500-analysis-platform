@@ -284,33 +284,31 @@ def create_growth_chart(df, company_name, start_year, end_year):
 
 
 def create_normalized_heatmap(df, company_name, base_year):
-    """Create heatmap showing growth relative to baseline year"""
-    plt.figure(figsize=(14, 10))
+    """Create heatmap showing relative importance across all categories and years"""
+    fig, ax = plt.subplots(figsize=(14, 10))
     
-    # Normalize to baseline year (shows growth from base year)
-    if base_year not in df.columns:
-        base_year = df.columns[0]
-    
-    normalized_df = df.div(df[base_year], axis=0) * 100
+    # Normalize to show relative importance across entire dataset
+    # Each cell = what % this category-year represents of total mentions across all categories and years
+    total_all = df.values.sum()
+    normalized_df = (df / total_all) * 100
     
     sns.heatmap(
         normalized_df, 
         annot=True, 
-        cmap='RdYlGn', 
-        fmt='.1f',
+        cmap='YlOrRd', 
+        fmt='.2f',
         linewidths=.5, 
-        cbar_kws={'label': f'Growth Index (Base Year {base_year} = 100)'},
-        center=100
+        cbar_kws={'label': '% of Total Mentions (All Categories & Years)'},
+        ax=ax
     )
     
-    plt.title(f'{company_name} Category Growth vs {base_year} Baseline', fontsize=18)
-    plt.ylabel('Category', fontsize=14)
-    plt.xlabel('Year', fontsize=14)
+    ax.set_title(f'{company_name} - Relative Importance Across Time', fontsize=18)
+    ax.set_ylabel('Category', fontsize=14)
+    ax.set_xlabel('Year', fontsize=14)
     plt.tight_layout()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    fig = plt.gcf()
     fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
     plt.close(fig)

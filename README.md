@@ -26,7 +26,7 @@ Full-stack web application for analyzing S&P 500 company 10-K filings using keyw
 **Visualizations (12 PNG files):**
 5. `strategic_trends.png` - Line chart of category trends over time
 6. `strategic_heatmap.png` - Within-year distribution (% of total mentions each year)
-7. `normalized_heatmap.png` - Growth vs baseline (2020 = 100 index)
+7. `normalized_heatmap.png` - Relative importance across all categories and years
 8. `stacked_area_chart.png` - Composition of mentions over time
 9. `category_share_evolution.png` - Each category as % of total over years
 10. `strategic_growth_YYYY_to_YYYY.png` - Overall growth comparison
