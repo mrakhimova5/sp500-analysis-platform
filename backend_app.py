@@ -15,12 +15,17 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# Configure matplotlib to be more memory-efficient
+plt.rcParams['figure.max_open_warning'] = 0  # Disable warning about too many figures
+plt.rcParams['agg.path.chunksize'] = 10000  # Reduce memory usage for complex plots
 from collections import Counter, defaultdict
 from datetime import datetime
 import io
 import base64
 from werkzeug.utils import secure_filename
 import zipfile
+import gc  # Garbage collection for memory management
 
 app = Flask(__name__)
 
@@ -116,24 +121,25 @@ def count_keywords_in_text(text, keywords_dict):
 
 def create_category_trends_plot(df, company_name):
     """Create line chart showing category trends across years"""
-    plt.figure(figsize=(15, 10))
+    fig, ax = plt.subplots(figsize=(15, 10))
     
     for category in df.index:
-        plt.plot(df.columns, df.loc[category], marker='o', linewidth=2, label=category)
+        ax.plot(df.columns, df.loc[category], marker='o', linewidth=2, label=category)
     
-    plt.title(f'{company_name} Strategic Focus Areas (2020-2024)', fontsize=18)
-    plt.xlabel('Year', fontsize=14)
-    plt.ylabel('Mentions in 10-K Report', fontsize=14)
-    plt.legend(fontsize=12, loc='upper left')
-    plt.grid(True, alpha=0.3)
+    ax.set_title(f'{company_name} Strategic Focus Areas (2020-2024)', fontsize=18)
+    ax.set_xlabel('Year', fontsize=14)
+    ax.set_ylabel('Mentions in 10-K Report', fontsize=14)
+    ax.legend(fontsize=12, loc='upper left')
+    ax.grid(True, alpha=0.3)
     plt.xticks(rotation=0)
     plt.tight_layout()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
@@ -161,9 +167,11 @@ def create_category_heatmap(df, company_name):
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    plt.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    fig = plt.gcf()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
@@ -190,7 +198,7 @@ def create_top_terms_plot(yearly_keyword_counts, year, company_name, top_n=15):
         plt.text(0.5, 0.5, 'No keywords found', ha='center', va='center', fontsize=16)
         plt.axis('off')
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight')
+        plt.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
         img_buffer.seek(0)
         plt.close()
         return img_buffer
@@ -199,7 +207,7 @@ def create_top_terms_plot(yearly_keyword_counts, year, company_name, top_n=15):
     df_top_terms = pd.DataFrame(top_terms)
     
     # Plot
-    plt.figure(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(12, 8))
     
     # Create a categorical colormap
     categories = df_top_terms['category'].unique()
@@ -207,7 +215,7 @@ def create_top_terms_plot(yearly_keyword_counts, year, company_name, top_n=15):
     category_color = {cat: colors[i] for i, cat in enumerate(categories)}
     
     # Create horizontal bar chart
-    bars = plt.barh(
+    bars = ax.barh(
         y=df_top_terms['term'],
         width=df_top_terms['count'],
         color=[category_color[cat] for cat in df_top_terms['category']],
@@ -215,22 +223,23 @@ def create_top_terms_plot(yearly_keyword_counts, year, company_name, top_n=15):
     )
     
     # Add labels
-    plt.title(f'Top {top_n} Keywords in {company_name} 10-K ({year})', fontsize=16)
-    plt.xlabel('Number of Mentions', fontsize=14)
+    ax.set_title(f'Top {top_n} Keywords in {company_name} 10-K ({year})', fontsize=16)
+    ax.set_xlabel('Number of Mentions', fontsize=14)
     plt.tight_layout()
     
     # Add category labels as legend
     handles = [plt.Rectangle((0,0),1,1, color=category_color[cat]) for cat in category_color]
-    plt.legend(handles, category_color.keys(), loc='lower right')
+    ax.legend(handles, category_color.keys(), loc='lower right')
     
     # Adjust y-axis to show most frequent terms at the top
-    plt.gca().invert_yaxis()
+    ax.invert_yaxis()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
@@ -255,20 +264,21 @@ def create_growth_chart(df, company_name, start_year, end_year):
     # Sort from highest growth to lowest
     growth_pct = growth_pct.sort_values(ascending=False)
     
-    plt.figure(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(12, 8))
     colors = ['g' if x >= 0 else 'r' for x in growth_pct]
     
-    plt.barh(growth_pct.index, growth_pct, color=colors, height=0.6)
-    plt.axvline(x=0, color='k', linestyle='-', alpha=0.3)
-    plt.title(f'{company_name} - Change in Strategic Focus Areas ({start_year} to {end_year})', fontsize=16)
-    plt.xlabel('Percentage Change (%)', fontsize=14)
+    ax.barh(growth_pct.index, growth_pct, color=colors, height=0.6)
+    ax.axvline(x=0, color='k', linestyle='-', alpha=0.3)
+    ax.set_title(f'{company_name} - Change in Strategic Focus Areas ({start_year} to {end_year})', fontsize=16)
+    ax.set_xlabel('Percentage Change (%)', fontsize=14)
     plt.tight_layout()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
@@ -300,73 +310,77 @@ def create_normalized_heatmap(df, company_name, base_year):
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig = plt.gcf()
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
 
 def create_stacked_area_chart(df, company_name):
     """Create stacked area chart showing composition over time"""
-    plt.figure(figsize=(15, 10))
+    fig, ax = plt.subplots(figsize=(15, 10))
     
     # Transpose for stacked area plot
     df_transposed = df.T
     
     # Create stacked area chart
-    plt.stackplot(df_transposed.index, 
+    ax.stackplot(df_transposed.index, 
                   [df_transposed[col] for col in df_transposed.columns],
                   labels=df_transposed.columns,
                   alpha=0.8)
     
-    plt.title(f'{company_name} Strategic Focus Composition (2020-2024)', fontsize=18)
-    plt.xlabel('Year', fontsize=14)
-    plt.ylabel('Total Mentions', fontsize=14)
-    plt.legend(loc='upper left', fontsize=12)
-    plt.grid(True, alpha=0.3)
+    ax.set_title(f'{company_name} Strategic Focus Composition (2020-2024)', fontsize=18)
+    ax.set_xlabel('Year', fontsize=14)
+    ax.set_ylabel('Total Mentions', fontsize=14)
+    ax.legend(loc='upper left', fontsize=12)
+    ax.grid(True, alpha=0.3)
     plt.tight_layout()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
 
 def create_category_share_evolution(df, company_name):
     """Create line chart showing each category's share of total mentions over time"""
-    plt.figure(figsize=(15, 10))
+    fig, ax = plt.subplots(figsize=(15, 10))
     
     # Calculate percentages for each year
     pct_df = df.div(df.sum(axis=0), axis=1) * 100
     
     # Plot each category
     for category in pct_df.index:
-        plt.plot(pct_df.columns, pct_df.loc[category], marker='o', linewidth=2, label=category)
+        ax.plot(pct_df.columns, pct_df.loc[category], marker='o', linewidth=2, label=category)
     
-    plt.title(f'{company_name} Category Share Evolution (% of Total Mentions)', fontsize=18)
-    plt.xlabel('Year', fontsize=14)
-    plt.ylabel('Share of Total Mentions (%)', fontsize=14)
-    plt.legend(fontsize=12, loc='best')
-    plt.grid(True, alpha=0.3)
-    plt.ylim(0, max(pct_df.max()) * 1.1)
+    ax.set_title(f'{company_name} Category Share Evolution (% of Total Mentions)', fontsize=18)
+    ax.set_xlabel('Year', fontsize=14)
+    ax.set_ylabel('Share of Total Mentions (%)', fontsize=14)
+    ax.legend(fontsize=12, loc='best')
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(0, max(pct_df.max()) * 1.1)
     plt.tight_layout()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
 
 def create_yoy_change_chart(df, company_name):
     """Create chart showing year-over-year percentage changes"""
-    plt.figure(figsize=(15, 10))
+    fig, ax = plt.subplots(figsize=(15, 10))
     
     years = sorted(df.columns)
     categories = df.index
@@ -392,22 +406,24 @@ def create_yoy_change_chart(df, company_name):
     for i, period in enumerate(yoy_changes.columns):
         offset = (i - len(yoy_changes.columns)/2 + 0.5) * width
         colors = ['g' if val >= 0 else 'r' for val in yoy_changes[period]]
-        plt.bar(x + offset, yoy_changes[period], width, label=period, color=colors, alpha=0.8)
+        ax.bar(x + offset, yoy_changes[period], width, label=period, color=colors, alpha=0.8)
     
-    plt.axhline(y=0, color='k', linestyle='-', alpha=0.3)
-    plt.title(f'{company_name} Year-over-Year Growth by Category', fontsize=18)
-    plt.xlabel('Category', fontsize=14)
-    plt.ylabel('YoY Change (%)', fontsize=14)
-    plt.xticks(x, categories, rotation=45, ha='right')
-    plt.legend(fontsize=12)
-    plt.grid(True, alpha=0.3, axis='y')
+    ax.axhline(y=0, color='k', linestyle='-', alpha=0.3)
+    ax.set_title(f'{company_name} Year-over-Year Growth by Category', fontsize=18)
+    ax.set_xlabel('Category', fontsize=14)
+    ax.set_ylabel('YoY Change (%)', fontsize=14)
+    ax.set_xticks(x)
+    ax.set_xticklabels(categories, rotation=45, ha='right')
+    ax.legend(fontsize=12)
+    ax.grid(True, alpha=0.3, axis='y')
     plt.tight_layout()
     
     # Save to BytesIO
     img_buffer = io.BytesIO()
-    plt.savefig(img_buffer, format='png', dpi=300)
+    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
     img_buffer.seek(0)
-    plt.close()
+    plt.close(fig)
+    plt.clf()
     
     return img_buffer
 
@@ -597,6 +613,9 @@ def analyze():
                 f.write(growth_buffer.getvalue())
             visualizations['growth'] = base64.b64encode(growth_buffer.getvalue()).decode('utf-8')
         
+        # Force garbage collection after heavy visualizations
+        gc.collect()
+        
         # 5. Normalized heatmap (growth vs baseline)
         normalized_heatmap_buffer = create_normalized_heatmap(df_categories, company_name, years[0])
         normalized_heatmap_path = os.path.join(company_folder, 'normalized_heatmap.png')
@@ -625,6 +644,9 @@ def analyze():
             with open(yoy_path, 'wb') as f:
                 f.write(yoy_buffer.getvalue())
             visualizations['yoy_change'] = base64.b64encode(yoy_buffer.getvalue()).decode('utf-8')
+        
+        # Final garbage collection after all visualizations
+        gc.collect()
         
         # Create summary statistics
         summary = {
