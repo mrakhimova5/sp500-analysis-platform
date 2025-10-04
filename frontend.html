@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S&P 500 10-K Analysis Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .keywords-input-large {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background: #f8f9fa;
+            resize: vertical;
+        }
+
+        .keywords-input-large:focus {
+            outline: none;
+            border-color: #764ba2;
+            background: white;
+        }
+
+        .example-keywords {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .example-keywords pre {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .file-upload-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px dashed #667eea;
+        }
+
+        .file-upload-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .file-upload-item label {
+            min-width: 80px;
+            margin: 0;
+            margin-right: 15px;
+        }
+
+        input[type="file"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .btn-analyze {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 30px;
+            transition: transform 0.2s;
+        }
+
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-analyze:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .results h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .visualization-section {
+            margin-bottom: 40px;
+        }
+
+        .visualization-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .visualization-image {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .year-visualizations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .btn-download {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto;
+        }
+
+        .btn-download:hover {
+            background: #229954;
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h4 {
+            color: #2980b9;
+            margin-bottom: 8px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .example-keywords {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 S&P 500 10-K Analysis Platform</h1>
+            <p>Analyze company strategic focus areas through 10-K reports (2020-2024)</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <h4>📋 Instructions</h4>
+                <ul>
+                    <li>Enter the company name you want to analyze</li>
+                    <li>Define keyword categories and their associated keywords</li>
+                    <li>Upload HTML versions of 10-K reports for years 2020-2024</li>
+                    <li>Click "Analyze" to generate comprehensive visual and statistical analysis</li>
+                </ul>
+            </div>
+
+            <form id="analysisForm">
+                <!-- Company Name -->
+                <div class="form-section">
+                    <h2>1. Company Information</h2>
+                    <div class="form-group">
+                        <label for="companyName">Company Name *</label>
+                        <input type="text" id="companyName" name="companyName" 
+                               placeholder="e.g., Apple Inc., Microsoft Corporation" required>
+                    </div>
+                </div>
+
+                <!-- Keywords -->
+                <div class="form-section">
+                    <h2>2. Keyword Categories</h2>
+                    <div class="example-keywords">
+                        <strong>💡 Paste your Python dictionary here:</strong>
+                        <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px; overflow-x: auto;">categories = {
+    "ai_ml": ["artificial intelligence", "machine learning", "deep learning"],
+    "safety_industrial": ["personal protective equipment", "ppe", "respiratory protection"],
+    "transportation_electronics": ["automotive oem", "automotive aftermarket", "lightweighting"]
+}</pre>
+                    </div>
+                    <div class="form-group">
+                        <label for="keywordsInput">Paste Keywords Dictionary:</label>
+                        <textarea id="keywordsInput" class="keywords-input-large" 
+                                  placeholder="Paste your Python dictionary here (e.g., categories = {...})" 
+                                  required></textarea>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            ✓ Paste the entire Python dictionary with all categories and keywords<br>
+                            ✓ Format: categories = {"category_name": ["keyword1", "keyword2", ...], ...}
+                        </small>
+                    </div>
+                </div>
+
+                <!-- File Uploads -->
+                <div class="form-section">
+                    <h2>3. Upload 10-K Documents (HTML Format)</h2>
+                    <div class="info-box">
+                        <h4>📁 File Requirements</h4>
+                        <ul>
+                            <li>Files must be in HTML format (.html or .htm)</li>
+                            <li>Filenames should contain the year (e.g., company_2020.html, 10k_2021.html)</li>
+                            <li>Upload one file for each year from 2020 to 2024</li>
+                        </ul>
+                    </div>
+                    <div class="file-upload-section">
+                        <div class="file-upload-item">
+                            <label for="file2020">2020:</label>
+                            <input type="file" id="file2020" name="file2020" accept=".html,.htm">
+                        </div>
+                        <div class="file-upload-item">
+                            <label for="file2021">2021:</label>
+                            <input type="file" id="file2021" name="file2021" accept=".html,.htm">
+                        </div>
+                        <div class="file-upload-item">
+                            <label for="file2022">2022:</label>
+                            <input type="file" id="file2022" name="file2022" accept=".html,.htm">
+                        </div>
+                        <div class="file-upload-item">
+                            <label for="file2023">2023:</label>
+                            <input type="file" id="file2023" name="file2023" accept=".html,.htm">
+                        </div>
+                        <div class="file-upload-item">
+                            <label for="file2024">2024:</label>
+                            <input type="file" id="file2024" name="file2024" accept=".html,.htm">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-analyze" id="analyzeBtn">🚀 Analyze Documents</button>
+            </form>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="loading" id="loadingSection">
+                <div class="spinner"></div>
+                <h3>Analyzing Documents...</h3>
+                <p>This may take a few minutes depending on file sizes</p>
+            </div>
+
+            <div class="results" id="resultsSection">
+                <h2 id="resultsTitle">Analysis Results</h2>
+                
+                <div class="summary-cards" id="summaryCards"></div>
+
+                <div class="visualization-section">
+                    <h3>📈 Strategic Trends Over Time</h3>
+                    <img class="visualization-image" id="trendsImage" alt="Strategic Trends">
+                </div>
+
+                <div class="visualization-section">
+                    <h3>🔥 Strategic Focus Heatmap</h3>
+                    <img class="visualization-image" id="heatmapImage" alt="Strategic Heatmap">
+                </div>
+
+                <div class="visualization-section">
+                    <h3>📊 Growth Analysis</h3>
+                    <img class="visualization-image" id="growthImage" alt="Growth Analysis">
+                </div>
+
+                <div class="visualization-section">
+                    <h3>🔑 Top Keywords by Year</h3>
+                    <div class="year-visualizations" id="yearVisualizations"></div>
+                </div>
+
+                <button class="btn-download" id="downloadBtn">📥 Download Complete Analysis</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001';
+
+        function collectKeywords() {
+            const keywordsInput = document.getElementById('keywordsInput').value.trim();
+            
+            if (!keywordsInput) {
+                throw new Error('Please paste your keywords dictionary');
+            }
+            
+            try {
+                // Parse Python dictionary format
+                // Remove "categories = " if present
+                let cleanInput = keywordsInput.replace(/^\s*categories\s*=\s*/, '');
+                
+                // Convert Python dictionary syntax to JSON
+                // Replace single quotes with double quotes
+                cleanInput = cleanInput.replace(/'/g, '"');
+                
+                // Parse as JSON
+                const keywords = JSON.parse(cleanInput);
+                
+                // Validate structure
+                if (typeof keywords !== 'object' || Array.isArray(keywords)) {
+                    throw new Error('Invalid dictionary format');
+                }
+                
+                // Validate that all values are arrays
+                for (const [category, terms] of Object.entries(keywords)) {
+                    if (!Array.isArray(terms)) {
+                        throw new Error(`Category "${category}" must have an array of keywords`);
+                    }
+                }
+                
+                return keywords;
+            } catch (error) {
+                throw new Error('Invalid dictionary format. Please paste a valid Python dictionary like: {"category": ["keyword1", "keyword2"], ...}');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+            setTimeout(() => {
+                errorDiv.classList.remove('active');
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            const loadingSection = document.getElementById('loadingSection');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            if (show) {
+                loadingSection.classList.add('active');
+                analyzeBtn.disabled = true;
+            } else {
+                loadingSection.classList.remove('active');
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsTitle = document.getElementById('resultsTitle');
+            const summaryCards = document.getElementById('summaryCards');
+            const yearVisualizations = document.getElementById('yearVisualizations');
+            
+            // Update title
+            resultsTitle.textContent = `Analysis Results for ${data.summary.company_name}`;
+            
+            // Create summary cards
+            summaryCards.innerHTML = `
+                <div class="summary-card">
+                    <h3>Years Analyzed</h3>
+                    <div class="value">${data.summary.years_analyzed.length}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Categories Tracked</h3>
+                    <div class="value">${data.summary.categories_tracked}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Keywords</h3>
+                    <div class="value">${data.summary.total_keywords}</div>
+                </div>
+            `;
+            
+            // Display main visualizations
+            document.getElementById('trendsImage').src = 'data:image/png;base64,' + data.visualizations.trends;
+            document.getElementById('heatmapImage').src = 'data:image/png;base64,' + data.visualizations.heatmap;
+            
+            if (data.visualizations.growth) {
+                document.getElementById('growthImage').src = 'data:image/png;base64,' + data.visualizations.growth;
+            } else {
+                document.getElementById('growthImage').style.display = 'none';
+            }
+            
+            // Display year-specific visualizations
+            yearVisualizations.innerHTML = '';
+            for (const [year, imageData] of Object.entries(data.visualizations.top_terms)) {
+                const yearDiv = document.createElement('div');
+                yearDiv.innerHTML = `
+                    <h4 style="text-align: center; margin-bottom: 10px;">Year ${year}</h4>
+                    <img src="data:image/png;base64,${imageData}" 
+                         alt="Top Terms ${year}" 
+                         class="visualization-image">
+                `;
+                yearVisualizations.appendChild(yearDiv);
+            }
+            
+            // Setup download button
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.onclick = () => {
+                window.location.href = `${API_URL}${data.download_url}`;
+            };
+            
+            // Show results
+            resultsSection.classList.add('active');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Collect form data
+            const companyName = document.getElementById('companyName').value.trim();
+            if (!companyName) {
+                showError('Please enter a company name');
+                return;
+            }
+            
+            const keywords = collectKeywords();
+            if (Object.keys(keywords).length === 0) {
+                showError('Please add at least one keyword category with keywords');
+                return;
+            }
+            
+            // Collect files
+            const formData = new FormData();
+            formData.append('company_name', companyName);
+            formData.append('keywords', JSON.stringify(keywords));
+            
+            let fileCount = 0;
+            const years = ['2020', '2021', '2022', '2023', '2024'];
+            
+            for (const year of years) {
+                const fileInput = document.getElementById(`file${year}`);
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    formData.append('files', file);
+                    formData.append(`year_${file.name}`, year);
+                    fileCount++;
+                }
+            }
+            
+            if (fileCount === 0) {
+                showError('Please upload at least one 10-K HTML document');
+                return;
+            }
+            
+            // Show loading
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Analysis failed. Please try again.');
+                }
+            } catch (error) {
+                showError('Error connecting to server. Please ensure the backend is running.');
+                console.error('Error:', error);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Initialize with one category
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Frontend loaded. Backend should be running on http://localhost:5000');
+        });
+    </script>
+</body>
+</html>
