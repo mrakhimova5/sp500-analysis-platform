@@ -151,10 +151,10 @@ def create_category_heatmap(df, company_name):
         cmap='YlGnBu', 
         fmt='.3f',
         linewidths=.5, 
-        cbar_kws={'label': 'Relative Focus (% of mentions)'}
+        cbar_kws={'label': '% of Total Mentions (Within Each Year)'}
     )
     
-    plt.title(f'{company_name} Strategic Focus Areas - Relative Importance (2020-2024)', fontsize=18)
+    plt.title(f'{company_name} Within-Year Category Distribution', fontsize=18)
     plt.ylabel('Category', fontsize=14)
     plt.xlabel('Year', fontsize=14)
     plt.tight_layout()
@@ -262,6 +262,145 @@ def create_growth_chart(df, company_name, start_year, end_year):
     plt.axvline(x=0, color='k', linestyle='-', alpha=0.3)
     plt.title(f'{company_name} - Change in Strategic Focus Areas ({start_year} to {end_year})', fontsize=16)
     plt.xlabel('Percentage Change (%)', fontsize=14)
+    plt.tight_layout()
+    
+    # Save to BytesIO
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300)
+    img_buffer.seek(0)
+    plt.close()
+    
+    return img_buffer
+
+
+def create_normalized_heatmap(df, company_name, base_year):
+    """Create heatmap showing growth relative to baseline year"""
+    plt.figure(figsize=(14, 10))
+    
+    # Normalize to baseline year (shows growth from base year)
+    if base_year not in df.columns:
+        base_year = df.columns[0]
+    
+    normalized_df = df.div(df[base_year], axis=0) * 100
+    
+    sns.heatmap(
+        normalized_df, 
+        annot=True, 
+        cmap='RdYlGn', 
+        fmt='.1f',
+        linewidths=.5, 
+        cbar_kws={'label': f'Growth Index (Base Year {base_year} = 100)'},
+        center=100
+    )
+    
+    plt.title(f'{company_name} Category Growth vs {base_year} Baseline', fontsize=18)
+    plt.ylabel('Category', fontsize=14)
+    plt.xlabel('Year', fontsize=14)
+    plt.tight_layout()
+    
+    # Save to BytesIO
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300)
+    img_buffer.seek(0)
+    plt.close()
+    
+    return img_buffer
+
+
+def create_stacked_area_chart(df, company_name):
+    """Create stacked area chart showing composition over time"""
+    plt.figure(figsize=(15, 10))
+    
+    # Transpose for stacked area plot
+    df_transposed = df.T
+    
+    # Create stacked area chart
+    plt.stackplot(df_transposed.index, 
+                  [df_transposed[col] for col in df_transposed.columns],
+                  labels=df_transposed.columns,
+                  alpha=0.8)
+    
+    plt.title(f'{company_name} Strategic Focus Composition (2020-2024)', fontsize=18)
+    plt.xlabel('Year', fontsize=14)
+    plt.ylabel('Total Mentions', fontsize=14)
+    plt.legend(loc='upper left', fontsize=12)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    # Save to BytesIO
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300)
+    img_buffer.seek(0)
+    plt.close()
+    
+    return img_buffer
+
+
+def create_category_share_evolution(df, company_name):
+    """Create line chart showing each category's share of total mentions over time"""
+    plt.figure(figsize=(15, 10))
+    
+    # Calculate percentages for each year
+    pct_df = df.div(df.sum(axis=0), axis=1) * 100
+    
+    # Plot each category
+    for category in pct_df.index:
+        plt.plot(pct_df.columns, pct_df.loc[category], marker='o', linewidth=2, label=category)
+    
+    plt.title(f'{company_name} Category Share Evolution (% of Total Mentions)', fontsize=18)
+    plt.xlabel('Year', fontsize=14)
+    plt.ylabel('Share of Total Mentions (%)', fontsize=14)
+    plt.legend(fontsize=12, loc='best')
+    plt.grid(True, alpha=0.3)
+    plt.ylim(0, max(pct_df.max()) * 1.1)
+    plt.tight_layout()
+    
+    # Save to BytesIO
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', dpi=300)
+    img_buffer.seek(0)
+    plt.close()
+    
+    return img_buffer
+
+
+def create_yoy_change_chart(df, company_name):
+    """Create chart showing year-over-year percentage changes"""
+    plt.figure(figsize=(15, 10))
+    
+    years = sorted(df.columns)
+    categories = df.index
+    
+    # Calculate YoY changes
+    yoy_changes = pd.DataFrame(index=categories)
+    
+    for i in range(1, len(years)):
+        prev_year = years[i-1]
+        curr_year = years[i]
+        
+        change_col = f'{prev_year}→{curr_year}'
+        yoy_changes[change_col] = df.apply(
+            lambda row: ((row[curr_year] - row[prev_year]) / row[prev_year] * 100) 
+            if row[prev_year] > 0 else (100 if row[curr_year] > 0 else 0),
+            axis=1
+        )
+    
+    # Create grouped bar chart
+    x = np.arange(len(categories))
+    width = 0.2
+    
+    for i, period in enumerate(yoy_changes.columns):
+        offset = (i - len(yoy_changes.columns)/2 + 0.5) * width
+        colors = ['g' if val >= 0 else 'r' for val in yoy_changes[period]]
+        plt.bar(x + offset, yoy_changes[period], width, label=period, color=colors, alpha=0.8)
+    
+    plt.axhline(y=0, color='k', linestyle='-', alpha=0.3)
+    plt.title(f'{company_name} Year-over-Year Growth by Category', fontsize=18)
+    plt.xlabel('Category', fontsize=14)
+    plt.ylabel('YoY Change (%)', fontsize=14)
+    plt.xticks(x, categories, rotation=45, ha='right')
+    plt.legend(fontsize=12)
+    plt.grid(True, alpha=0.3, axis='y')
     plt.tight_layout()
     
     # Save to BytesIO
@@ -458,6 +597,35 @@ def analyze():
                 f.write(growth_buffer.getvalue())
             visualizations['growth'] = base64.b64encode(growth_buffer.getvalue()).decode('utf-8')
         
+        # 5. Normalized heatmap (growth vs baseline)
+        normalized_heatmap_buffer = create_normalized_heatmap(df_categories, company_name, years[0])
+        normalized_heatmap_path = os.path.join(company_folder, 'normalized_heatmap.png')
+        with open(normalized_heatmap_path, 'wb') as f:
+            f.write(normalized_heatmap_buffer.getvalue())
+        visualizations['normalized_heatmap'] = base64.b64encode(normalized_heatmap_buffer.getvalue()).decode('utf-8')
+        
+        # 6. Stacked area chart
+        stacked_area_buffer = create_stacked_area_chart(df_categories, company_name)
+        stacked_area_path = os.path.join(company_folder, 'stacked_area_chart.png')
+        with open(stacked_area_path, 'wb') as f:
+            f.write(stacked_area_buffer.getvalue())
+        visualizations['stacked_area'] = base64.b64encode(stacked_area_buffer.getvalue()).decode('utf-8')
+        
+        # 7. Category share evolution
+        share_evolution_buffer = create_category_share_evolution(df_categories, company_name)
+        share_evolution_path = os.path.join(company_folder, 'category_share_evolution.png')
+        with open(share_evolution_path, 'wb') as f:
+            f.write(share_evolution_buffer.getvalue())
+        visualizations['share_evolution'] = base64.b64encode(share_evolution_buffer.getvalue()).decode('utf-8')
+        
+        # 8. Year-over-year change chart
+        if len(years) >= 2:
+            yoy_buffer = create_yoy_change_chart(df_categories, company_name)
+            yoy_path = os.path.join(company_folder, 'yoy_change_chart.png')
+            with open(yoy_path, 'wb') as f:
+                f.write(yoy_buffer.getvalue())
+            visualizations['yoy_change'] = base64.b64encode(yoy_buffer.getvalue()).decode('utf-8')
+        
         # Create summary statistics
         summary = {
             'company_name': company_name,
@@ -486,11 +654,15 @@ def analyze():
             # Add visualizations
             zipf.write(trends_path, 'strategic_trends.png')
             zipf.write(heatmap_path, 'strategic_heatmap.png')
+            zipf.write(normalized_heatmap_path, 'normalized_heatmap.png')
+            zipf.write(stacked_area_path, 'stacked_area_chart.png')
+            zipf.write(share_evolution_path, 'category_share_evolution.png')
             for year in years:
                 top_terms_path = os.path.join(company_folder, f'top_terms_{year}.png')
                 zipf.write(top_terms_path, f'top_terms_{year}.png')
             if len(years) >= 2:
                 zipf.write(growth_path, f'strategic_growth_{first_year}_to_{last_year}.png')
+                zipf.write(yoy_path, 'yoy_change_chart.png')
             
             # Add original HTML files
             for year, html_filename in uploaded_files.items():
