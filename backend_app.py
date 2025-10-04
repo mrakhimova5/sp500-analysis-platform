@@ -347,85 +347,6 @@ def create_stacked_area_chart(df, company_name):
     return img_buffer
 
 
-def create_category_share_evolution(df, company_name):
-    """Create line chart showing each category's share of total mentions over time"""
-    fig, ax = plt.subplots(figsize=(15, 10))
-    
-    # Calculate percentages for each year
-    pct_df = df.div(df.sum(axis=0), axis=1) * 100
-    
-    # Plot each category
-    for category in pct_df.index:
-        ax.plot(pct_df.columns, pct_df.loc[category], marker='o', linewidth=2, label=category)
-    
-    ax.set_title(f'{company_name} Category Share Evolution (% of Total Mentions)', fontsize=18)
-    ax.set_xlabel('Year', fontsize=14)
-    ax.set_ylabel('Share of Total Mentions (%)', fontsize=14)
-    ax.legend(fontsize=12, loc='best')
-    ax.grid(True, alpha=0.3)
-    ax.set_ylim(0, max(pct_df.max()) * 1.1)
-    plt.tight_layout()
-    
-    # Save to BytesIO
-    img_buffer = io.BytesIO()
-    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
-    img_buffer.seek(0)
-    plt.close(fig)
-    plt.clf()
-    
-    return img_buffer
-
-
-def create_yoy_change_chart(df, company_name):
-    """Create chart showing year-over-year percentage changes"""
-    fig, ax = plt.subplots(figsize=(15, 10))
-    
-    years = sorted(df.columns)
-    categories = df.index
-    
-    # Calculate YoY changes
-    yoy_changes = pd.DataFrame(index=categories)
-    
-    for i in range(1, len(years)):
-        prev_year = years[i-1]
-        curr_year = years[i]
-        
-        change_col = f'{prev_year}→{curr_year}'
-        yoy_changes[change_col] = df.apply(
-            lambda row: ((row[curr_year] - row[prev_year]) / row[prev_year] * 100) 
-            if row[prev_year] > 0 else (100 if row[curr_year] > 0 else 0),
-            axis=1
-        )
-    
-    # Create grouped bar chart
-    x = np.arange(len(categories))
-    width = 0.2
-    
-    for i, period in enumerate(yoy_changes.columns):
-        offset = (i - len(yoy_changes.columns)/2 + 0.5) * width
-        colors = ['g' if val >= 0 else 'r' for val in yoy_changes[period]]
-        ax.bar(x + offset, yoy_changes[period], width, label=period, color=colors, alpha=0.8)
-    
-    ax.axhline(y=0, color='k', linestyle='-', alpha=0.3)
-    ax.set_title(f'{company_name} Year-over-Year Growth by Category', fontsize=18)
-    ax.set_xlabel('Category', fontsize=14)
-    ax.set_ylabel('YoY Change (%)', fontsize=14)
-    ax.set_xticks(x)
-    ax.set_xticklabels(categories, rotation=45, ha='right')
-    ax.legend(fontsize=12)
-    ax.grid(True, alpha=0.3, axis='y')
-    plt.tight_layout()
-    
-    # Save to BytesIO
-    img_buffer = io.BytesIO()
-    fig.savefig(img_buffer, format='png', dpi=200, bbox_inches='tight')
-    img_buffer.seek(0)
-    plt.close(fig)
-    plt.clf()
-    
-    return img_buffer
-
-
 @app.route('/')
 def index():
     """Serve the frontend HTML"""
@@ -643,21 +564,6 @@ def analyze():
             f.write(stacked_area_buffer.getvalue())
         visualizations['stacked_area'] = base64.b64encode(stacked_area_buffer.getvalue()).decode('utf-8')
         
-        # 7. Category share evolution
-        share_evolution_buffer = create_category_share_evolution(df_categories, company_name)
-        share_evolution_path = os.path.join(company_folder, 'category_share_evolution.png')
-        with open(share_evolution_path, 'wb') as f:
-            f.write(share_evolution_buffer.getvalue())
-        visualizations['share_evolution'] = base64.b64encode(share_evolution_buffer.getvalue()).decode('utf-8')
-        
-        # 8. Year-over-year change chart
-        if len(years) >= 2:
-            yoy_buffer = create_yoy_change_chart(df_categories, company_name)
-            yoy_path = os.path.join(company_folder, 'yoy_change_chart.png')
-            with open(yoy_path, 'wb') as f:
-                f.write(yoy_buffer.getvalue())
-            visualizations['yoy_change'] = base64.b64encode(yoy_buffer.getvalue()).decode('utf-8')
-        
         # Final garbage collection after all visualizations
         gc.collect()
         
@@ -691,13 +597,11 @@ def analyze():
             zipf.write(heatmap_path, 'strategic_heatmap.png')
             zipf.write(normalized_heatmap_path, 'normalized_heatmap.png')
             zipf.write(stacked_area_path, 'stacked_area_chart.png')
-            zipf.write(share_evolution_path, 'category_share_evolution.png')
             for year in years:
                 top_terms_path = os.path.join(company_folder, f'top_terms_{year}.png')
                 zipf.write(top_terms_path, f'top_terms_{year}.png')
             if len(years) >= 2:
                 zipf.write(growth_path, f'strategic_growth_{first_year}_to_{last_year}.png')
-                zipf.write(yoy_path, 'yoy_change_chart.png')
             
             # Add original HTML files
             for year, html_filename in uploaded_files.items():
