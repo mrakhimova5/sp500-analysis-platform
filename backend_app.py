@@ -465,10 +465,14 @@ def analyze():
     - files: HTML files (year_2020.html, year_2021.html, etc.)
     """
     try:
+        print(f"[ANALYZE] Starting analysis at {datetime.now().isoformat()}")
+        
         # Get company name
         company_name = request.form.get('company_name')
         if not company_name:
             return jsonify({'error': 'Company name is required'}), 400
+        
+        print(f"[ANALYZE] Company: {company_name}")
         
         # Get keywords
         keywords_json = request.form.get('keywords')
@@ -477,13 +481,17 @@ def analyze():
         
         try:
             keywords = json.loads(keywords_json)
-        except json.JSONDecodeError:
+            print(f"[ANALYZE] Keywords loaded: {len(keywords)} categories")
+        except json.JSONDecodeError as e:
+            print(f"[ANALYZE] JSON decode error: {e}")
             return jsonify({'error': 'Invalid keywords JSON format'}), 400
         
         # Get uploaded files
         files = request.files.getlist('files')
         if not files or len(files) == 0:
             return jsonify({'error': 'No files uploaded'}), 400
+        
+        print(f"[ANALYZE] Files received: {len(files)}")
         
         # Create company-specific output directory
         company_folder = os.path.join(app.config['OUTPUT_FOLDER'], 
@@ -575,10 +583,13 @@ def analyze():
         detailed_csv_path = os.path.join(company_folder, 'keyword_counts_detailed.csv')
         df_detailed.to_csv(detailed_csv_path, index=False)
         
+        print(f"[ANALYZE] Data processing complete. Generating visualizations...")
+        
         # Generate visualizations
         visualizations = {}
         
         # 1. Category trends
+        print(f"[ANALYZE] Creating trends chart...")
         trends_buffer = create_category_trends_plot(df_categories, company_name)
         trends_path = os.path.join(company_folder, 'strategic_trends.png')
         with open(trends_path, 'wb') as f:
@@ -586,6 +597,7 @@ def analyze():
         visualizations['trends'] = base64.b64encode(trends_buffer.getvalue()).decode('utf-8')
         
         # 2. Category heatmap
+        print(f"[ANALYZE] Creating heatmap...")
         heatmap_buffer = create_category_heatmap(df_categories, company_name)
         heatmap_path = os.path.join(company_folder, 'strategic_heatmap.png')
         with open(heatmap_path, 'wb') as f:
@@ -593,6 +605,7 @@ def analyze():
         visualizations['heatmap'] = base64.b64encode(heatmap_buffer.getvalue()).decode('utf-8')
         
         # 3. Top terms for each year
+        print(f"[ANALYZE] Creating top terms charts...")
         visualizations['top_terms'] = {}
         for year in years:
             top_terms_buffer = create_top_terms_plot(yearly_keyword_counts, year, company_name)
@@ -603,6 +616,7 @@ def analyze():
         
         # 4. Growth chart
         if len(years) >= 2:
+            print(f"[ANALYZE] Creating growth chart...")
             first_year = min(years)
             last_year = max(years)
             growth_buffer = create_growth_chart(df_categories, company_name, first_year, last_year)
@@ -615,6 +629,7 @@ def analyze():
         gc.collect()
         
         # 5. Normalized heatmap (growth vs baseline)
+        print(f"[ANALYZE] Creating normalized heatmap...")
         normalized_heatmap_buffer = create_normalized_heatmap(df_categories, company_name, years[0])
         normalized_heatmap_path = os.path.join(company_folder, 'normalized_heatmap.png')
         with open(normalized_heatmap_path, 'wb') as f:
@@ -689,6 +704,8 @@ def analyze():
                 html_path = os.path.join(company_folder, html_filename)
                 zipf.write(html_path, f'original_10k/{html_filename}')
         
+        print(f"[ANALYZE] Analysis complete! Returning results...")
+        
         return jsonify({
             'success': True,
             'summary': summary,
@@ -697,7 +714,10 @@ def analyze():
         })
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[ANALYZE] ERROR: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'{type(e).__name__}: {str(e)}'}), 500
 
 
 @app.route('/download/<company_name>')
