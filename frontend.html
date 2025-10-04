@@ -444,27 +444,11 @@
                     <img class="visualization-image" id="stackedAreaImage" alt="Stacked Area Chart">
                 </div>
 
-                <div class="visualization-section">
-                    <h3>📊 Category Share Evolution (%)</h3>
-                    <img class="visualization-image" id="shareEvolutionImage" alt="Share Evolution">
-                </div>
-
-                <div class="visualization-section">
-                    <h3>📊 Total Growth (2020 to 2024)</h3>
-                    <img class="visualization-image" id="growthImage" alt="Growth Analysis">
-                </div>
-
-                <div class="visualization-section">
-                    <h3>� Year-over-Year Changes</h3>
-                    <img class="visualization-image" id="yoyChangeImage" alt="YoY Changes">
-                </div>
-
-                <div class="visualization-section">
                     <h3>�🔑 Top Keywords by Year</h3>
                     <div class="year-visualizations" id="yearVisualizations"></div>
                 </div>
 
-                <button class="btn-download" id="downloadBtn">📥 Download Complete Analysis (21 Files)</button>
+                <button class="btn-download" id="downloadBtn">📥 Download Complete Analysis (17 Files)</button>
             </div>
         </div>
     </div>
@@ -573,22 +557,10 @@
                 document.getElementById('stackedAreaImage').style.display = 'none';
             }
             
-            if (data.visualizations.share_evolution) {
-                document.getElementById('shareEvolutionImage').src = 'data:image/png;base64,' + data.visualizations.share_evolution;
-            } else {
-                document.getElementById('shareEvolutionImage').style.display = 'none';
-            }
-            
             if (data.visualizations.growth) {
                 document.getElementById('growthImage').src = 'data:image/png;base64,' + data.visualizations.growth;
             } else {
                 document.getElementById('growthImage').style.display = 'none';
-            }
-            
-            if (data.visualizations.yoy_change) {
-                document.getElementById('yoyChangeImage').src = 'data:image/png;base64,' + data.visualizations.yoy_change;
-            } else {
-                document.getElementById('yoyChangeImage').style.display = 'none';
             }
             
             // Display year-specific visualizations

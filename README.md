@@ -10,12 +10,12 @@ Full-stack web application for analyzing S&P 500 company 10-K filings using keyw
 
 - Upload 5 HTML files (10-K filings for consecutive years)
 - Keyword frequency analysis across years
-- 12 comprehensive visualizations (300 DPI)
+- 8 comprehensive visualizations (200 DPI)
 - Export results as CSV and JSON
 - Download all outputs as ZIP package
 - Word-boundary matching for accurate detection
 
-## 📊 Output Files (21 total)
+## 📊 Output Files (17 total)
 
 **Data Files:**
 1. `keywords_dictionary.json` - Keywords used in analysis (your input)
@@ -23,18 +23,16 @@ Full-stack web application for analyzing S&P 500 company 10-K filings using keyw
 3. `strategy_analysis.csv` - Category totals with YoY growth
 4. `keyword_counts_detailed.csv` - Individual keyword counts
 
-**Visualizations (12 PNG files):**
+**Visualizations (8 PNG files):**
 5. `strategic_trends.png` - Line chart of category trends over time
 6. `strategic_heatmap.png` - Within-year distribution (% of total mentions each year)
 7. `normalized_heatmap.png` - Relative importance across all categories and years
 8. `stacked_area_chart.png` - Composition of mentions over time
-9. `category_share_evolution.png` - Each category as % of total over years
-10. `strategic_growth_YYYY_to_YYYY.png` - Overall growth comparison
-11-15. `top_terms_2020.png` through `top_terms_2024.png` - Top keywords by year
-16. `yoy_change_chart.png` - Year-over-year percentage changes
+9. `strategic_growth_YYYY_to_YYYY.png` - Overall growth comparison
+10-14. `top_terms_2020.png` through `top_terms_2024.png` - Top keywords by year
 
 **Original Documents (5 HTML files):**
-17-21. `original_10k/10k_2020.html` through `10k_2024.html` - Your uploaded 10-K files
+15-17. `original_10k/10k_2020.html` through `10k_2024.html` - Your uploaded 10-K files
 
 ## �� Tech Stack
 
@@ -76,7 +74,7 @@ docker-compose up
    ```
 3. **Upload 5 HTML files** (10-K filings, oldest → newest)
 4. **Click "Analyze"**
-5. **Download results** (ZIP with 21 files including original 10-Ks)
+5. **Download results** (ZIP with 17 files including original 10-Ks)
 
 ## 🌐 API Endpoints
 
