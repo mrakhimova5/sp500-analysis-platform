@@ -340,6 +340,7 @@ def analyze():
         # Process each file
         yearly_texts = {}
         yearly_keyword_counts = {}
+        uploaded_files = {}  # Track saved HTML files
         
         for file in files:
             if file and allowed_file(file.filename):
@@ -362,8 +363,15 @@ def analyze():
                     
                     # Count keywords
                     yearly_keyword_counts[year] = count_keywords_in_text(text, keywords)
+                    
+                    # Save HTML file to company folder
+                    html_filename = f'10k_{year}.html'
+                    html_save_path = os.path.join(company_folder, html_filename)
+                    with open(file_path, 'rb') as src, open(html_save_path, 'wb') as dst:
+                        dst.write(src.read())
+                    uploaded_files[year] = html_filename
                 
-                # Clean up uploaded file
+                # Clean up uploaded file from temp folder
                 os.remove(file_path)
         
         if not yearly_texts:
@@ -469,10 +477,13 @@ def analyze():
         # Create a zip file with all outputs
         zip_path = os.path.join(company_folder, f'{company_name.replace(" ", "_")}_analysis.zip')
         with zipfile.ZipFile(zip_path, 'w') as zipf:
+            # Add JSON and CSV files
             zipf.write(keywords_dict_path, 'keywords_dictionary.json')
             zipf.write(json_path, 'keyword_counts.json')
             zipf.write(csv_path, 'strategy_analysis.csv')
             zipf.write(detailed_csv_path, 'keyword_counts_detailed.csv')
+            
+            # Add visualizations
             zipf.write(trends_path, 'strategic_trends.png')
             zipf.write(heatmap_path, 'strategic_heatmap.png')
             for year in years:
@@ -480,6 +491,11 @@ def analyze():
                 zipf.write(top_terms_path, f'top_terms_{year}.png')
             if len(years) >= 2:
                 zipf.write(growth_path, f'strategic_growth_{first_year}_to_{last_year}.png')
+            
+            # Add original HTML files
+            for year, html_filename in uploaded_files.items():
+                html_path = os.path.join(company_folder, html_filename)
+                zipf.write(html_path, f'original_10k/{html_filename}')
         
         return jsonify({
             'success': True,
