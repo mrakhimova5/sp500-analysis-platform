@@ -369,6 +369,11 @@ def analyze():
         if not yearly_texts:
             return jsonify({'error': 'No valid documents processed. Please ensure filenames contain years (e.g., 2020, 2021)'}), 400
         
+        # Save the keywords dictionary used for analysis
+        keywords_dict_path = os.path.join(company_folder, 'keywords_dictionary.json')
+        with open(keywords_dict_path, 'w') as f:
+            json.dump(keywords, f, indent=4)
+        
         # Save raw keyword counts to JSON
         json_path = os.path.join(company_folder, 'keyword_counts.json')
         with open(json_path, 'w') as f:
@@ -464,6 +469,7 @@ def analyze():
         # Create a zip file with all outputs
         zip_path = os.path.join(company_folder, f'{company_name.replace(" ", "_")}_analysis.zip')
         with zipfile.ZipFile(zip_path, 'w') as zipf:
+            zipf.write(keywords_dict_path, 'keywords_dictionary.json')
             zipf.write(json_path, 'keyword_counts.json')
             zipf.write(csv_path, 'strategy_analysis.csv')
             zipf.write(detailed_csv_path, 'keyword_counts_detailed.csv')

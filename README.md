@@ -15,12 +15,13 @@ Full-stack web application for analyzing S&P 500 company 10-K filings using keyw
 - Download all outputs as ZIP package
 - Word-boundary matching for accurate detection
 
-## 📊 Output Files (11 total)
+## 📊 Output Files (12 total)
 
-1. `keyword_counts.json` - Raw keyword counts
-2. `strategy_analysis.csv` - Category totals with YoY growth
-3. `keyword_counts_detailed.csv` - Individual keyword counts
-4-11. PNG visualizations (trends, heatmaps, growth charts, top keywords by year)
+1. `keywords_dictionary.json` - Keywords used in analysis (your input)
+2. `keyword_counts.json` - Raw keyword counts by year
+3. `strategy_analysis.csv` - Category totals with YoY growth
+4. `keyword_counts_detailed.csv` - Individual keyword counts
+5-12. PNG visualizations (trends, heatmaps, growth charts, top keywords by year)
 
 ## �� Tech Stack
 
@@ -62,7 +63,7 @@ docker-compose up
    ```
 3. **Upload 5 HTML files** (10-K filings, oldest → newest)
 4. **Click "Analyze"**
-5. **Download results** (ZIP with 11 files)
+5. **Download results** (ZIP with 12 files)
 
 ## 🌐 API Endpoints
 
