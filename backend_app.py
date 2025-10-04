@@ -26,6 +26,7 @@ import base64
 from werkzeug.utils import secure_filename
 import zipfile
 import gc  # Garbage collection for memory management
+import shutil  # For cleanup operations
 
 app = Flask(__name__)
 
@@ -39,6 +40,16 @@ ALLOWED_EXTENSIONS = {'html', 'htm'}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Clean up any old output folders on startup to free memory
+try:
+    for folder in os.listdir(OUTPUT_FOLDER):
+        folder_path = os.path.join(OUTPUT_FOLDER, folder)
+        if os.path.isdir(folder_path):
+            shutil.rmtree(folder_path)
+    print(f"[STARTUP] Cleaned up old output folders")
+except Exception as e:
+    print(f"[STARTUP] Cleanup warning: {e}")
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
@@ -388,6 +399,21 @@ def analyze():
     try:
         print(f"[ANALYZE] Starting analysis at {datetime.now().isoformat()}")
         
+        # Clean up old folders to free memory BEFORE starting new analysis
+        try:
+            output_dir = app.config['OUTPUT_FOLDER']
+            for folder_name in os.listdir(output_dir):
+                folder_path = os.path.join(output_dir, folder_name)
+                if os.path.isdir(folder_path):
+                    # Check if folder is older than 10 minutes
+                    folder_age = datetime.now().timestamp() - os.path.getmtime(folder_path)
+                    if folder_age > 600:  # 10 minutes
+                        shutil.rmtree(folder_path)
+                        print(f"[ANALYZE] Cleaned up old folder: {folder_name}")
+            gc.collect()
+        except Exception as cleanup_err:
+            print(f"[ANALYZE] Cleanup warning: {cleanup_err}")
+        
         # Get company name
         company_name = request.form.get('company_name')
         if not company_name:
@@ -610,6 +636,38 @@ def analyze():
         
         print(f"[ANALYZE] Analysis complete! Returning results...")
         
+        # Clean up to free memory - delete all individual files but keep the ZIP
+        try:
+            for year, html_filename in uploaded_files.items():
+                html_path = os.path.join(company_folder, html_filename)
+                if os.path.exists(html_path):
+                    os.remove(html_path)
+            
+            # Delete CSV and JSON files
+            for file_path in [keywords_dict_path, json_path, csv_path, detailed_csv_path]:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            
+            # Delete visualization files
+            for file_path in [trends_path, heatmap_path, normalized_heatmap_path, stacked_area_path]:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            
+            for year in years:
+                top_terms_path = os.path.join(company_folder, f'top_terms_{year}.png')
+                if os.path.exists(top_terms_path):
+                    os.remove(top_terms_path)
+            
+            if len(years) >= 2 and os.path.exists(growth_path):
+                os.remove(growth_path)
+            
+            print(f"[ANALYZE] Cleaned up temporary files to free memory")
+        except Exception as cleanup_error:
+            print(f"[ANALYZE] Warning: Cleanup failed: {cleanup_error}")
+        
+        # Force garbage collection
+        gc.collect()
+        
         return jsonify({
             'success': True,
             'summary': summary,
@@ -634,6 +692,8 @@ def download(company_name):
         if not os.path.exists(zip_path):
             return jsonify({'error': 'Analysis results not found'}), 404
         
+        # Send the file directly - don't delete yet
+        # Cleanup will happen on next analysis or startup
         return send_file(zip_path, 
                         as_attachment=True, 
                         download_name=f'{company_name}_analysis.zip',
