@@ -562,12 +562,6 @@
                 document.getElementById('stackedAreaImage').style.display = 'none';
             }
             
-            if (data.visualizations.growth) {
-                document.getElementById('growthImage').src = 'data:image/png;base64,' + data.visualizations.growth;
-            } else {
-                document.getElementById('growthImage').style.display = 'none';
-            }
-            
             // Display year-specific visualizations
             yearVisualizations.innerHTML = '';
             for (const [year, imageData] of Object.entries(data.visualizations.top_terms)) {
