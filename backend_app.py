@@ -65,7 +65,8 @@ def allowed_file(filename):
 def extract_text_from_html(file_path):
     """
     Extract visible text from HTML file using BeautifulSoup
-    Focuses on actual readable content, excluding metadata and technical elements
+    Extracts only text content that would be readable by a user (body text only)
+    Removes all script, style, meta, and head elements
     """
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -73,16 +74,20 @@ def extract_text_from_html(file_path):
         
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        # Remove non-visible elements
-        for element in soup(["script", "style", "meta", "noscript", "header", "footer", "nav", "head"]):
+        # Remove all non-content elements
+        for element in soup(['script', 'style', 'meta', 'link', 'noscript', 'head']):
             element.decompose()
         
-        # Get text from body or main content areas
-        # This focuses on actual document content
-        text = soup.get_text(separator=' ', strip=True)
+        # Extract text from body only (skip headers/footers/metadata)
+        body = soup.find('body')
+        if body:
+            text = body.get_text(separator=' ', strip=True)
+        else:
+            # Fallback if no body tag
+            text = soup.get_text(separator=' ', strip=True)
         
         # Clean up excessive whitespace
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
         
         return text
     except Exception as e:
