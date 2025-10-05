@@ -63,24 +63,26 @@ def allowed_file(filename):
 
 
 def extract_text_from_html(file_path):
-    """Extract text from HTML file using BeautifulSoup"""
+    """
+    Extract visible text from HTML file using BeautifulSoup
+    Focuses on actual readable content, excluding metadata and technical elements
+    """
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             html_content = f.read()
         
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.decompose()
+        # Remove non-visible elements
+        for element in soup(["script", "style", "meta", "noscript", "header", "footer", "nav", "head"]):
+            element.decompose()
         
-        # Get text
-        text = soup.get_text()
+        # Get text from body or main content areas
+        # This focuses on actual document content
+        text = soup.get_text(separator=' ', strip=True)
         
-        # Clean up text
-        lines = (line.strip() for line in text.splitlines())
-        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        text = ' '.join(chunk for chunk in chunks if chunk)
+        # Clean up excessive whitespace
+        text = re.sub(r'\s+', ' ', text)
         
         return text
     except Exception as e:
